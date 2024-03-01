@@ -14,6 +14,15 @@ const MapboxSkiRuns = () => {
       zoom: 6,
     });
 
+    const zoom = (index, angle) => { 
+      map.flyTo({
+        center: index,
+        zoom: 12.5,
+        essential: true, 
+        bearing: angle,
+      });
+    }
+
     map.on("load", () => {
       // Replace the 'data.geojson' with the path to your generated GeoJSON file
       map.addSource("skiRuns", {
@@ -103,6 +112,10 @@ const MapboxSkiRuns = () => {
           map.on("click", "Ski-markers", (e) => {
             // Display the message or handle the click event as needed
             window.alert("Fernie Zoom");
+            console.log("Fernie Zoom")
+            //zoom
+            zoom([-115.0873, 49.4627], -100)
+
           });
         }
       );
