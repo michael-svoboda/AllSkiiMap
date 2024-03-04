@@ -1,7 +1,9 @@
 client/node_modules/
 server/node_modules/
+/package-lock.json
+/package.json
+client/package-lock.json
+client/package.json
+.DS_Store
+/client/src/.DS_Store
 .env
-package-lock.json
-package.json
-server/package-lock.json
-server/package.json
