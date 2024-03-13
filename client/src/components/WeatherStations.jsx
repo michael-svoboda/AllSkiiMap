@@ -12,6 +12,8 @@ import kimberleyImage from "../images/kimberley.png"
 import silverStarImage from "../images/silverStar.png"
 import sunPeaksImage from "../images/sunPeaks.png"
 import bigWhiteImage from "../images/bigWhite.png"
+import * as turf from '@turf/turf';
+
 
 const MapboxSkiRuns = () => {
   useEffect(() => {
@@ -82,12 +84,164 @@ const MapboxSkiRuns = () => {
 
 
 
-    map.on("load", () => {
+
+
+    map.on("load", async () => {
       // Replace the 'data.geojson' with the path to your generated GeoJSON file
       map.addSource("skiRuns", {
         type: "geojson",
         data: "http://localhost:3001/ski-runs", // Updated relative path
       });
+
+      //adding mock geojson data
+      const geojsonData = {
+        "type": "Feature",
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [
+              -116.143883,
+              51.449265
+            ],
+            [
+              -116.144698,
+              51.448307
+            ],
+            [
+              -116.144859,
+              51.448181
+            ],
+            [
+              -116.145084,
+              51.44809
+            ],
+            [
+              -116.145449,
+              51.448003
+            ],
+            [
+              -116.145605,
+              51.447934
+            ],
+            [
+              -116.146463,
+              51.447319
+            ],
+            [
+              -116.146962,
+              51.446993
+            ],
+            [
+              -116.147365,
+              51.446784
+            ],
+            [
+              -116.147772,
+              51.446635
+            ],
+            [
+              -116.149124,
+              51.446249
+            ],
+            [
+              -116.15046,
+              51.445836
+            ],
+            [
+              -116.150803,
+              51.445761
+            ],
+            [
+              -116.151211,
+              51.445741
+            ],
+            [
+              -116.151769,
+              51.445701
+            ],
+            [
+              -116.153325,
+              51.44554
+            ]
+          ]
+        },
+        "properties": {
+          "name": "Ladies' Downhill",
+          "piste:difficulty": "advanced",
+          "piste:type": "downhill"
+        }
+      };
+
+      const pinRoute = geojsonData.geometry.coordinates.reverse();
+      const popup = new mapboxgl.Popup({ closeButton: false }).setHTML('<h3>Popup Content</h3>');
+      const marker = new mapboxgl.Marker({
+        color: 'red',
+        scale: 1.8,
+        draggable: false,
+        pitchAlignment: 'auto',
+        rotationAlignment: 'auto'
+    })
+        marker.setLngLat([-116.143883,51.449265])
+        marker.setPopup(popup)
+        marker.addTo(map)
+        marker.togglePopup();
+
+      // Add a source and layer displaying a point which will be used to highlight the route
+      map.addSource('line', {
+        type: 'geojson',
+        lineMetrics: true,
+        data: geojsonData
+      });
+      map.addLayer({
+        id: 'line',
+        type: 'line',
+        source: 'line',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': 'rgba(0,0,0,0)',
+          'line-width': 10
+        }
+      });
+
+      const animationDuration = 20000;
+      const path = turf.lineString(pinRoute);
+      const pathDistance = turf.lineDistance(path);
+      let start;
+      function frame(time) {
+        if (!start) start = time;
+        const animationPhase = (time - start) / animationDuration;
+        if (animationPhase > 1) {
+            return;
+        }
+
+        // Get the new latitude and longitude by sampling along the path
+        const alongPath = turf.along(path, pathDistance * animationPhase)
+            .geometry.coordinates;
+        const lngLat = {
+            lng: alongPath[0],
+            lat: alongPath[1]
+        };
+        const elevation = Math.floor(
+          // Do not use terrain exaggeration to get actual meter values
+          map.queryTerrainElevation(lngLat, { exaggerated: false })
+        );
+        
+        // Update the popup altitude value and marker location
+        popup.setHTML('Altitude: ' + elevation + 'm<br/>');
+        marker.setLngLat(lngLat);
+        map.setPaintProperty('line', 'line-gradient', [
+          'step',
+          ['line-progress'],
+          'red',
+          animationPhase,
+          'rgba(255, 0, 0, 0)'   
+      ]);
+      window.requestAnimationFrame(frame);
+    }
+    window.requestAnimationFrame(frame);
 
       map.addLayer({
         id: "lineStringsOutline",
